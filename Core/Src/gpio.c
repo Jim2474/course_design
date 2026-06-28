@@ -48,6 +48,10 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_AFIO_CLK_ENABLE();  /* 开启AFIO时钟用于引脚重映射 */
+
+  /* 释放PB3 (JTDO) 作为普通GPIO引脚使用 (保留SW-DP调试接口，禁用JTAG-DP) */
+  __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, motora_Pin|motorb_Pin|motorc_Pin|motord_Pin, GPIO_PIN_RESET);
