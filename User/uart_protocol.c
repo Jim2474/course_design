@@ -146,27 +146,56 @@ static void ParseFrame(const uint8_t *frame, uint8_t len)
 
 /**
  * @brief  主循环中调用: 检查IDLE标志并处理接收到的数据
- * @note   DMA Circular模式下, 通过DMA计数器计算已接收字节数
+ * @note   Bug3修复: DMA Circular模式下用静态变量记录上次写入位置,
+ *         避免缓冲区绕回时计算出错 (原代码只对第一次传输正确)
  */
 void UART_Protocol_Process(void)
 {
     if (g_uart_idle_flag == 0) return;  /* 没有新数据, 直接返回 */
     g_uart_idle_flag = 0;
 
-    /* 计算DMA已接收的字节数 */
-    /* DMA剩余计数 = UART_RX_BUF_SIZE - 已传输字节数 */
+    /* 静态变量: 记录上次DMA写入的缓冲区位置 */
+    static uint16_t s_last_pos = 0;
+
+    /* 计算DMA当前写入位置 */
     uint16_t dma_remain = __HAL_DMA_GET_COUNTER(huart1.hdmarx);
-    uint16_t rx_len     = UART_RX_BUF_SIZE - dma_remain;
+    uint16_t cur_pos    = UART_RX_BUF_SIZE - dma_remain;
 
-    if (rx_len == 0) return;
+    if (cur_pos == s_last_pos) goto done;  /* 无新数据 */
 
-    /* 在缓冲区中搜索有效帧 (帧头0xAA) */
-    for (uint16_t i = 0; i < rx_len; i++)
+    if (cur_pos > s_last_pos)
     {
-        if (g_uart_rx_buf[i] == FRAME_HEAD_DOWN)
+        /* 正常情况: 新数据在 [s_last_pos, cur_pos) 线性区间 */
+        for (uint16_t i = s_last_pos; i < cur_pos; i++)
         {
-            ParseFrame(&g_uart_rx_buf[i], rx_len - i);
-            break;  /* 每次IDLE只处理一帧 */
+            if (g_uart_rx_buf[i] == FRAME_HEAD_DOWN)
+            {
+                ParseFrame(&g_uart_rx_buf[i], cur_pos - i);
+                break;
+            }
         }
     }
+    else
+    {
+        /* 缓冲区绕回: 先处理尾部 [s_last_pos, BUF_SIZE), 再处理头部 [0, cur_pos) */
+        for (uint16_t i = s_last_pos; i < UART_RX_BUF_SIZE; i++)
+        {
+            if (g_uart_rx_buf[i] == FRAME_HEAD_DOWN)
+            {
+                ParseFrame(&g_uart_rx_buf[i], UART_RX_BUF_SIZE - i);
+                goto done;  /* 找到帧, 本次只处理一帧 */
+            }
+        }
+        for (uint16_t i = 0; i < cur_pos; i++)
+        {
+            if (g_uart_rx_buf[i] == FRAME_HEAD_DOWN)
+            {
+                ParseFrame(&g_uart_rx_buf[i], cur_pos - i);
+                break;
+            }
+        }
+    }
+
+done:
+    s_last_pos = cur_pos;  /* 更新写入位置记录 */
 }

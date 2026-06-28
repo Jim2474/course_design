@@ -53,7 +53,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+volatile uint8_t g_tim4_flag = 0;  /* TIM4 500ms周期标志位 (中断里只置位, 主循环里处理) */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,22 +104,20 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  /* === 启动TIM2 PWM (舵机) === */
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  /* === 第一步: 初始化所有用户模块 (TIM中断未启动, 安全) === */
+  BH1750_Init();        /* 初始化光照传感器 (I2C阻塞式, 含180ms延迟) */
+  Rain_Init();          /* 初始化雨滴传感器 (GPIO已由CubeMX配置) */
+  Stepper_Init();       /* 初始化步进电机 (必须在TIM3启动前) */
+  Servo_Init();         /* 初始化舵机 (TIM2 PWM已Init, 上电默认关窗) */
+  Key_Init();           /* 初始化按键 */
+  Control_Init();       /* 初始化控制逻辑 */
 
-  /* === 启动TIM3 定时中断 (步进电机, 1ms) === */
-  HAL_TIM_Base_Start_IT(&htim3);
+  /* === 第二步: 启动定时器 (模块完整初始化后) === */
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);   /* 启动舵机PWM输出 */
+  HAL_TIM_Base_Start_IT(&htim3);              /* 启动步进电机1ms定时中断 */
+  HAL_TIM_Base_Start_IT(&htim4);              /* 启动500ms任务调度中断 */
 
-  /* === 启动TIM4 定时中断 (任务调度, 500ms) === */
-  HAL_TIM_Base_Start_IT(&htim4);
-
-  /* === 初始化用户模块 === */
-  BH1750_Init();       /* 初始化光照传感器 */
-  Rain_Init();         /* 初始化雨滴传感器 */
-  Stepper_Init();      /* 初始化步进电机 */
-  Servo_Init();        /* 初始化舵机 (上电默认关窗) */
-  Key_Init();          /* 初始化按键 */
-  Control_Init();      /* 初始化控制逻辑 */
+  /* === 第三步: 启动串口DMA接收 (最后启动) === */
   UART_Protocol_Init(); /* 启动DMA接收 + IDLE中断 */
 
   /* USER CODE END 2 */
@@ -132,15 +130,23 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* === 主循环任务 === */
-    /* 按键扫描 (不阻塞, 轮询方式) */
+    /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
+
+    /* 任务1: TIM4 500ms周期任务 (传感器采集 + 控制逻辑 + VOFA+上传) */
+    if (g_tim4_flag)
+    {
+        g_tim4_flag = 0;
+        Control_TIM4_Callback();  /* 包含I2C读取, 必须在主循环中执行 */
+    }
+
+    /* 任务2: 按键扫描 (不阻塞, 轮询) */
     uint8_t key_event = Key_Scan();
     if (key_event != KEY_EVENT_NONE)
     {
         Control_KeyProcess(key_event);
     }
 
-    /* 串口数据解析 (检查IDLE标志) */
+    /* 任务3: 串口数据解析 (检查IDLE标志) */
     UART_Protocol_Process();
 
   }
@@ -197,12 +203,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM3)
     {
         /* TIM3: 1ms中断, 驱动步进电机节拍 */
+        /* 内部只有GPIO操作, 中断安全 */
         Stepper_TIM_Callback();
     }
     else if (htim->Instance == TIM4)
     {
-        /* TIM4: 500ms中断, 传感器采集+控制逻辑+VOFA+上传 */
-        Control_TIM4_Callback();
+        /* TIM4: 500ms中断, 只设标志位 */
+        /* 不在中断里执行I2C/UART阻塞操作! 主循环检测g_tim4_flag后执行 */
+        g_tim4_flag = 1;
     }
 }
 

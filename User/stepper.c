@@ -73,12 +73,16 @@ void Stepper_Close(void)
 
 /**
  * @brief  立即停止电机
+ * @note   Bug4修复: 停止时将窗帘状态置为OPEN (安全侧)
+ *         原代码未更新s_curtain_state, 导致状态永远是MOVING,
+ *         后续的Stepper_Open/Close保护判断会失效
  */
 void Stepper_Stop(void)
 {
-    s_target_steps = 0;
-    s_direction    = 0;
-    Stepper_OutputStep(0);  /* 关断线圈 */
+    s_target_steps  = 0;
+    s_direction     = 0;
+    s_curtain_state = CURTAIN_STATE_OPEN;  /* 停止时默认认为帘子在当前位置=开(安全侧) */
+    Stepper_OutputStep(0);  /* 关断线圈省电 */
 }
 
 /**
@@ -96,18 +100,22 @@ uint8_t Stepper_GetCurtainState(void)
  */
 void Stepper_TIM_Callback(void)
 {
-    if (s_target_steps <= 0 || s_direction == 0)
+    /* 检查是否运动完成 */
+    if (s_direction == 0)
+    {
+        return;  /* 无运动指令, 直接退出 */
+    }
+    
+    if (s_target_steps <= 0)
     {
         /* 运动完成: 更新状态, 关断线圈 */
-        if (s_target_steps <= 0 && s_direction != 0)
-        {
-            if (s_direction > 0)
-                s_curtain_state = CURTAIN_STATE_OPEN;
-            else
-                s_curtain_state = CURTAIN_STATE_CLOSED;
-            s_direction = 0;
-            Stepper_OutputStep(0);  /* 关断线圈 */
-        }
+        if (s_direction > 0)
+            s_curtain_state = CURTAIN_STATE_OPEN;
+        else
+            s_curtain_state = CURTAIN_STATE_CLOSED;
+        s_direction    = 0;
+        s_target_steps = 0;  /* 防止负数累积 */
+        Stepper_OutputStep(0);
         return;
     }
     
