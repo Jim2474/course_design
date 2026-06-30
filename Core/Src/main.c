@@ -75,15 +75,12 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  /* ===== 测试代码: 直接操作寄存器点亮PA4, 不依赖HAL库 ===== */
-  /* 使能GPIOA时钟 */
+  /* ===== 测试代码已注释: 用于排查程序是否进入main =====
   RCC->APB2ENR |= (1 << 2);
-  /* PA4配置: 推挽输出, 50MHz (CNF4=00, MODE4=11) */
-  GPIOA->CRL &= ~(0xF << 16);   /* 清除PA4的CNF和MODE位 */
-  GPIOA->CRL |=  (0x3 << 16);   /* MODE4=11, CNF4=00 */
-  /* PA4输出高电平 */
+  GPIOA->CRL &= ~(0xF << 16);
+  GPIOA->CRL |=  (0x3 << 16);
   GPIOA->BSRR = (1 << 4);
-  /* ===== 测试代码结束 ===== */
+  */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -138,15 +135,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* ===== 测试代码: PA4翻转, 确认主循环在跑 ===== */
+    /* ===== 测试代码已注释: 用于排查主循环是否运行 =====
     static uint32_t s_last_toggle = 0;
     uint32_t now = HAL_GetTick();
-    if (now - s_last_toggle >= 500)  /* 每500ms翻转一次 */
+    if (now - s_last_toggle >= 500)
     {
         s_last_toggle = now;
         HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
     }
-    /* ===== 测试代码结束 ===== */
+    */
 
     /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
 
