@@ -75,7 +75,15 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  /* ===== 测试代码: 最开头点亮PA4, 确认程序是否跑到main ===== */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  GPIO_InitTypeDef test_gpio = {0};
+  test_gpio.Pin = GPIO_PIN_4;
+  test_gpio.Mode = GPIO_MODE_OUTPUT_PP;
+  test_gpio.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &test_gpio);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);  /* PA4输出高电平, 变红色说明跑到这里了 */
+  /* ===== 测试代码结束 ===== */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -98,7 +106,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
-  MX_I2C1_Init();
+  //MX_I2C1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
@@ -129,6 +137,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+    /* ===== 测试代码: PA4翻转, 确认主循环在跑 ===== */
+    static uint32_t s_last_toggle = 0;
+    uint32_t now = HAL_GetTick();
+    if (now - s_last_toggle >= 500)  /* 每500ms翻转一次 */
+    {
+        s_last_toggle = now;
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+    }
+    /* ===== 测试代码结束 ===== */
 
     /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
 
