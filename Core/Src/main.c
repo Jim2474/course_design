@@ -65,6 +65,13 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+/* ===== 系统时钟源选择 =====
+ * 1 = 使用外部HSE晶振 (8MHz × 9 = 72MHz) → 实体板用
+ * 0 = 使用内部HSI振荡器 (8MHz/2 × 16 = 64MHz) → Proteus仿真用
+ * Proteus仿真外部晶振不稳定, 建议用HSI
+ */
+#define USE_HSE_CLOCK  0
+
 /* USER CODE END 0 */
 
 /**
@@ -79,7 +86,7 @@ int main(void)
      完全不依赖HAL库, 直接操作寄存器翻转PA4
      用于验证: Proteus仿真模型 + hex加载 + BOOT0 是否正常
   */
-  // #define MINIMAL_TEST
+  #define MINIMAL_TEST
   
   #ifdef MINIMAL_TEST
   /* 使能GPIOA时钟 (RCC_APB2ENR的位2) */
@@ -193,9 +200,8 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+#if USE_HSE_CLOCK
+  /* ===== 外部HSE晶振: 8MHz × 9 = 72MHz (实体板用) ===== */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -203,6 +209,15 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+#else
+  /* ===== 内部HSI振荡器: 8MHz/2 × 16 = 64MHz (Proteus仿真用) ===== */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+#endif
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
