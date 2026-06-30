@@ -75,12 +75,28 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  /* ===== 测试代码已注释: 用于排查程序是否进入main =====
+  /* ===== 最小测试模式: 解开下面的#define即可启用 =====
+     完全不依赖HAL库, 直接操作寄存器翻转PA4
+     用于验证: Proteus仿真模型 + hex加载 + BOOT0 是否正常
+  */
+  // #define MINIMAL_TEST
+  
+  #ifdef MINIMAL_TEST
+  /* 使能GPIOA时钟 (RCC_APB2ENR的位2) */
   RCC->APB2ENR |= (1 << 2);
+  /* PA4配置: 推挽输出, 50MHz (CNF4=00, MODE4=11) */
   GPIOA->CRL &= ~(0xF << 16);
   GPIOA->CRL |=  (0x3 << 16);
-  GPIOA->BSRR = (1 << 4);
-  */
+  /* 死循环翻转PA4 */
+  while (1)
+  {
+    GPIOA->BSRR = (1 << 4);        /* PA4置高 */
+    for (volatile int i = 0; i < 500000; i++);  /* 延时 */
+    GPIOA->BRR  = (1 << 4);        /* PA4置低 */
+    for (volatile int i = 0; i < 500000; i++);  /* 延时 */
+  }
+  #endif
+  /* ===== 最小测试模式结束 ===== */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
