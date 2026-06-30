@@ -75,14 +75,14 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  /* ===== 测试代码: 最开头点亮PA4, 确认程序是否跑到main ===== */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  GPIO_InitTypeDef test_gpio = {0};
-  test_gpio.Pin = GPIO_PIN_4;
-  test_gpio.Mode = GPIO_MODE_OUTPUT_PP;
-  test_gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOA, &test_gpio);
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);  /* PA4输出高电平, 变红色说明跑到这里了 */
+  /* ===== 测试代码: 直接操作寄存器点亮PA4, 不依赖HAL库 ===== */
+  /* 使能GPIOA时钟 */
+  RCC->APB2ENR |= (1 << 2);
+  /* PA4配置: 推挽输出, 50MHz (CNF4=00, MODE4=11) */
+  GPIOA->CRL &= ~(0xF << 16);   /* 清除PA4的CNF和MODE位 */
+  GPIOA->CRL |=  (0x3 << 16);   /* MODE4=11, CNF4=00 */
+  /* PA4输出高电平 */
+  GPIOA->BSRR = (1 << 4);
   /* ===== 测试代码结束 ===== */
   /* USER CODE END 1 */
 
