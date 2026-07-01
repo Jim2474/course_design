@@ -66,11 +66,11 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 /* ===== 系统时钟源选择 =====
- * 1 = 使用外部HSE晶振 (8MHz × 9 = 72MHz) → 实体板用
- * 0 = 使用内部HSI振荡器 (8MHz/2 × 16 = 64MHz) → Proteus仿真用
- * Proteus仿真外部晶振不稳定, 建议用HSI
+ * 1 = 使用外部HSE晶振 (8MHz × 9 = 72MHz) → 实体板 / Proteus仿真用
+ * 0 = 使用内部HSI振荡器 (8MHz/2 × 16 = 64MHz) → 备用方案
+ * Proteus仿真外部晶振(8MHz)最稳定, 推荐HSE; HSI+PLL在Proteus下USART可能异常
  */
-#define USE_HSE_CLOCK  0
+#define USE_HSE_CLOCK  1
 
 /* USER CODE END 0 */
 
