@@ -66,11 +66,11 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 /* ===== 系统时钟源选择 =====
- * 1 = 使用外部HSE晶振 (8MHz × 9 = 72MHz) → 实体板用
- * 0 = 使用内部HSI振荡器 (8MHz/2 × 16 = 64MHz) → Proteus仿真用
- * Proteus仿真外部晶振不稳定, 建议用HSI
+ * 1 = 使用外部HSE晶振 (8MHz × 9 = 72MHz) → 实体板 / Proteus仿真用
+ * 0 = 使用内部HSI振荡器 (8MHz/2 × 16 = 64MHz) → 备用方案
+ * Proteus仿真外部晶振(8MHz)最稳定, 推荐HSE; HSI+PLL在Proteus下USART可能异常
  */
-#define USE_HSE_CLOCK  0
+#define USE_HSE_CLOCK  1
 
 /* USER CODE END 0 */
 
@@ -141,15 +141,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* ===== 测试代码已注释: 用于排查主循环是否运行 =====
-    static uint32_t s_last_toggle = 0;
-    uint32_t now = HAL_GetTick();
-    if (now - s_last_toggle >= 500)
-    {
-        s_last_toggle = now;
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-    }
-    */
+
 
     /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
 
