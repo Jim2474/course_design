@@ -233,8 +233,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         /* 不在中断里执行I2C/UART阻塞操作! 主循环检测g_tim4_flag后执行 */
         g_tim4_flag = 1;
 
-        /* 调试: TIM4中断触发指示灯 (PC13) */
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        /* 调试: TIM4中断触发时将PC13置高,
+         * uart1_write_direct发送完成后会将其拉低 */
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
     }
 }
 

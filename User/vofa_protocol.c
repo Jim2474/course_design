@@ -28,6 +28,9 @@ static const uint8_t VOFA_TAIL[4] = {0x00, 0x00, 0x80, 0x7F};
  */
 static void uart1_write_direct(const uint8_t *buf, uint16_t len)
 {
+    /* 调试: 标记发送开始 */
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+
     for (uint16_t i = 0; i < len; i++)
     {
         /* 等待发送数据寄存器为空 (TXE: Transmit Data Register Empty) */
@@ -36,6 +39,9 @@ static void uart1_write_direct(const uint8_t *buf, uint16_t len)
     }
     /* 等待最后一字节移出移位寄存器 (TC: Transmission Complete) */
     while (!(USART1->SR & USART_SR_TC)) {}
+
+    /* 调试: 标记发送结束 */
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 }
 
 /**
