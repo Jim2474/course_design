@@ -1,7 +1,7 @@
 /**
  * @file    vofa_protocol.c
- * @brief   VOFA+ 上位机数据上传 (FireWater协议)
- * @details FireWater格式: N个float(小端序) + 帧尾{0x00,0x00,0x80,0x7F}
+ * @brief   VOFA+ 上位机数据上传 (FireWater文本协议)
+ * @details FireWater文本格式: "ch0,ch1,ch2,ch3,ch4\n"
  *          VOFA+中选择FireWater协议, 添加5个通道即可自动解析
  *          通道1: 光照强度(lux)
  *          通道2: 雨滴状态 (0=无雨, 1=有雨)
@@ -11,10 +11,7 @@
  */
 #include "vofa_protocol.h"
 #include "usart.h"
-#include <string.h>  /* memcpy */
-
-/* FireWater帧尾标识 (IEEE 754 +Inf 小端序) */
-static const uint8_t VOFA_TAIL[4] = {0x00, 0x00, 0x80, 0x7F};
+#include <stdio.h>   /* snprintf */
 
 /**
  * @brief  直接寄存器发送UART数据 (完全绕过HAL状态机)
@@ -48,18 +45,13 @@ static void uart1_write_direct(const uint8_t *buf, uint16_t len)
  */
 void VOFA_Upload(float lux, float rain, float curtain, float window, float mode)
 {
-    /* 完整帧: 5×float(20字节) + 帧尾(4字节) = 24字节 */
-    uint8_t frame[VOFA_CHANNEL_NUM * sizeof(float) + sizeof(VOFA_TAIL)];
-    float data[VOFA_CHANNEL_NUM];
-    data[0] = lux;
-    data[1] = rain;
-    data[2] = curtain;
-    data[3] = window;
-    data[4] = mode;
-
-    memcpy(frame,                data,      sizeof(data));
-    memcpy(frame + sizeof(data), VOFA_TAIL, sizeof(VOFA_TAIL));
-
-    /* 直接寄存器发送, 不受HAL状态机限制 */
-    uart1_write_direct(frame, sizeof(frame));
+    /* FireWater文本格式: "ch0,ch1,ch2,ch3,ch4\n" */
+    char buf[64];
+    int len = snprintf(buf, sizeof(buf),
+                       "%.2f,%.2f,%.2f,%.2f,%.2f\n",
+                       lux, rain, curtain, window, mode);
+    if (len > 0)
+    {
+        uart1_write_direct((const uint8_t *)buf, (uint16_t)len);
+    }
 }
