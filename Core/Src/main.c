@@ -141,14 +141,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* ===== 调试LED: 用于排查主循环是否运行 ===== */
-    static uint32_t s_last_toggle = 0;
-    uint32_t now = HAL_GetTick();
-    if (now - s_last_toggle >= 500)
-    {
-        s_last_toggle = now;
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-    }
+
 
     /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
 
@@ -240,8 +233,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         /* 不在中断里执行I2C/UART阻塞操作! 主循环检测g_tim4_flag后执行 */
         g_tim4_flag = 1;
 
-        /* 调试: TIM4中断触发指示灯 */
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+        /* 调试: TIM4中断触发指示灯 (PC13) */
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     }
 }
 
