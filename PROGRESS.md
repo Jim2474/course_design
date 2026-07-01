@@ -260,6 +260,24 @@ VOFA+ FireWater文本格式: `"ch0,ch1,ch2,ch3,ch4\n"`
 
 ---
 
+## 串口发送中断重构 (2026-07-01)
+
+### 重构目标
+将串口发送从 `HAL_UART_Transmit` 轮询模式重构为 `HAL_UART_Transmit_IT` 中断模式，提高主循环响应速度。
+
+### 关键实现
+1. 在 `uart_protocol.c` 中新增 **256 字节环形发送队列**
+2. `VOFA_Upload()` 和 `UART_SendACK()` 调用 `UART_TX_Send()` 将数据入队
+3. `HAL_UART_TxCpltCallback()` 中自动继续发送队列剩余数据
+4. 重新配置中断优先级：TIM3(1,0) > TIM4(2,0) > USART1(3,0) = DMA(3,1)
+5. 使能 `UART_IT_ERR` 错误中断，实现 `HAL_UART_ErrorCallback` 自动恢复 DMA 接收
+6. 修复 DMA Circular 缓冲区绕回时的帧解析问题
+
+### 产出文档
+- [代码审查报告_2026-07-01.md](代码审查报告_2026-07-01.md)
+
+---
+
 ## 待完成 (Phase 7~9)
 
 ### Phase 7: 硬件联调

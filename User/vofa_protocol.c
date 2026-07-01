@@ -11,10 +11,11 @@
  */
 #include "vofa_protocol.h"
 #include "usart.h"
+#include "uart_protocol.h"  /* UART_TX_Send */
 #include <stdio.h>   /* snprintf */
 
 /**
- * @brief  上传一帧数据到VOFA+ (使用HAL库发送)
+ * @brief  上传一帧数据到VOFA+ (使用HAL中断发送, 非阻塞)
  * @param  lux      光照强度 (单位lux)
  * @param  rain     雨滴状态 (0.0=无雨, 1.0=有雨)
  * @param  curtain  窗帘状态 (0.0=开, 1.0=关, 2.0=运动中)
@@ -30,6 +31,7 @@ void VOFA_Upload(float lux, float rain, float curtain, float window, float mode)
                        lux, rain, curtain, window, mode);
     if (len > 0)
     {
-        HAL_UART_Transmit(&huart1, (const uint8_t *)buf, (uint16_t)len, 100);
+        /* 加入中断发送队列, 非阻塞 */
+        UART_TX_Send((const uint8_t *)buf, (uint16_t)len);
     }
 }

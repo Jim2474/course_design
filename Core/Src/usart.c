@@ -102,8 +102,12 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmarx,hdma_usart1_rx);
 
     /* USART1 interrupt Init */
-    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+    /* 优先级: 低于TIM3(步进电机)和TIM4(任务调度), 与DMA同级 */
+    HAL_NVIC_SetPriority(USART1_IRQn, 3, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
+
+    /* 使能UART错误中断 (ORE/FE/NE/PE), 便于异常恢复 */
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_ERR);
   /* USER CODE BEGIN USART1_MspInit 1 */
 
   /* USER CODE END USART1_MspInit 1 */

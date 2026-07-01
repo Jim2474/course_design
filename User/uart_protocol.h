@@ -39,4 +39,8 @@ void UART_Protocol_Init(void);
 void UART_Protocol_Process(void);        /* 主循环中调用, 解析收到的帧 */
 void UART_SendACK(uint8_t cmd, uint8_t status);
 
+/* 中断发送队列接口 */
+void UART_TX_Init(void);
+uint8_t UART_TX_Send(const uint8_t *data, uint16_t len);
+
 #endif /* __UART_PROTOCOL_H */
