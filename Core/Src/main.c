@@ -141,7 +141,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* ===== 测试代码已注释: 用于排查主循环是否运行 =====
+    /* ===== 调试LED: 用于排查主循环是否运行 ===== */
     static uint32_t s_last_toggle = 0;
     uint32_t now = HAL_GetTick();
     if (now - s_last_toggle >= 500)
@@ -149,7 +149,6 @@ int main(void)
         s_last_toggle = now;
         HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
     }
-    */
 
     /* === 主循环任务 (所有阻塞操作均在此执行, 不在中断里) === */
 
