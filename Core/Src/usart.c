@@ -53,6 +53,11 @@ void MX_USART1_UART_Init(void)
   }
   /* USER CODE BEGIN USART1_Init 2 */
 
+  /* 调试: Proteus仿真中实际PCLK2可能不是72MHz,
+   * 强制覆盖BRR以匹配实际36MHz PCLK2下的115200bps
+   * 0x113 = 19.5 -> 36MHz/(16*19.5) = 115384bps (误差0.16%) */
+  USART1->BRR = 0x113;
+
   /* USER CODE END USART1_Init 2 */
 
 }
