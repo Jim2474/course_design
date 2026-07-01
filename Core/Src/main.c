@@ -239,6 +239,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         /* TIM4: 500ms中断, 只设标志位 */
         /* 不在中断里执行I2C/UART阻塞操作! 主循环检测g_tim4_flag后执行 */
         g_tim4_flag = 1;
+
+        /* 调试: TIM4中断触发指示灯 */
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
     }
 }
 
