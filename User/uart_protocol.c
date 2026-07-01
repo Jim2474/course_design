@@ -33,21 +33,6 @@ static uint8_t Calc_XOR(const uint8_t *buf, uint8_t len)
 }
 
 /**
- * @brief  直接寄存器发送UART数据 (绕过HAL状态机)
- * @note   与VOFA_Upload中的uart1_write_direct保持一致,
- *         防止DMA-RX运行时HAL_UART_Transmit返回HAL_BUSY丢包
- */
-static void uart1_write_direct(const uint8_t *buf, uint16_t len)
-{
-    for (uint16_t i = 0; i < len; i++)
-    {
-        while (!(USART1->SR & USART_SR_TXE)) {}
-        USART1->DR = buf[i];
-    }
-    while (!(USART1->SR & USART_SR_TC)) {}
-}
-
-/**
  * @brief  初始化串口协议 (启动DMA接收 + IDLE中断)
  * @note   必须在MX_USART1_UART_Init()之后调用
  */
@@ -60,7 +45,7 @@ void UART_Protocol_Init(void)
 }
 
 /**
- * @brief  发送ACK帧
+ * @brief  发送ACK帧 (使用HAL库发送)
  * @param  cmd    对应的命令字
  * @param  status ACK_OK / ACK_FAIL / ACK_RAIN_REJECT
  */
@@ -72,7 +57,7 @@ void UART_SendACK(uint8_t cmd, uint8_t status)
     ack[2] = 0x01;    /* 数据长度固定为1 */
     ack[3] = status;
     ack[4] = cmd ^ 0x01 ^ status;  /* XOR校验 */
-    uart1_write_direct(ack, 5);
+    HAL_UART_Transmit(&huart1, ack, 5, 100);
 }
 
 /**
