@@ -6,7 +6,7 @@
  */
 #include "bh1750.h"
 #include "i2c.h"
-#define SIMULATION_MODE 1  /* 置1表示在Proteus中进行无芯片仿真测试 */
+#define SIMULATION_MODE 0  /* 0=真实硬件模式, 1=Proteus无芯片仿真模式 */
 
 /**
  * @brief  初始化BH1750传感器
