@@ -7,6 +7,7 @@
  */
 #include "servo.h"
 #include "tim.h"
+#include "main.h"  /* Error_Handler */
 
 /* 当前窗户状态 */
 static uint8_t s_window_state = WINDOW_STATE_CLOSED;  /* 上电默认关窗 */
@@ -22,9 +23,15 @@ static void Servo_SetPulse(uint16_t pulse_us)
 
 /**
  * @brief  初始化舵机 (上电默认关窗位置)
+ * @note   Bug5修复: 原代码在PWM Start之前调用Servo_SetPulse, 
+ *         CCR值虽然写入寄存器, 但PWM输出通道尚未激活,
+ *         Proteus仿真中舵机完全无响应。
+ *         修复: 在Init内部先Start PWM, 再设置脉冲, 模块自包含。
  */
 void Servo_Init(void)
 {
+    /* 先启动PWM输出通道, 再设置初始脉冲 */
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     Servo_SetPulse(SERVO_WINDOW_CLOSE);
     s_window_state = WINDOW_STATE_CLOSED;
     HAL_Delay(500);  /* 等待舵机到位 */

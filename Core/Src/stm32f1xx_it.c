@@ -59,6 +59,7 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
+extern volatile uint8_t g_uart_idle_flag;  /* 定义在 uart_protocol.c, USART1_IRQHandler中置位 */
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -253,7 +254,6 @@ void USART1_IRQHandler(void)
   if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET)
   {
     __HAL_UART_CLEAR_IDLEFLAG(&huart1);        /* 清除IDLE标志位 */
-    extern volatile uint8_t g_uart_idle_flag;  /* 在main.c中定义 */
     g_uart_idle_flag = 1;                      /* 设置标志, 通知主循环处理数据 */
   }
   /* USER CODE END USART1_IRQn 0 */

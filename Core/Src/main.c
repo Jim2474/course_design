@@ -82,28 +82,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  /* ===== 最小测试模式: 解开下面的#define即可启用 =====
-     完全不依赖HAL库, 直接操作寄存器翻转PA4
-     用于验证: Proteus仿真模型 + hex加载 + BOOT0 是否正常
+  /* ===== MINIMAL_TEST已删除 (排查阶段测试代码) =====
+     曾用于验证Proteus仿真模型 + hex加载 + BOOT0是否正常。
+     已确认问题根因是HSE时钟未起振, 改用HSI后程序正常启动。
+     本测试代码已删除, 恢复完整正常的初始化流程。
   */
-  #define MINIMAL_TEST
-  
-  #ifdef MINIMAL_TEST
-  /* 使能GPIOA时钟 (RCC_APB2ENR的位2) */
-  RCC->APB2ENR |= (1 << 2);
-  /* PA4配置: 推挽输出, 50MHz (CNF4=00, MODE4=11) */
-  GPIOA->CRL &= ~(0xF << 16);
-  GPIOA->CRL |=  (0x3 << 16);
-  /* 死循环翻转PA4 */
-  while (1)
-  {
-    GPIOA->BSRR = (1 << 4);        /* PA4置高 */
-    for (volatile int i = 0; i < 500000; i++);  /* 延时 */
-    GPIOA->BRR  = (1 << 4);        /* PA4置低 */
-    for (volatile int i = 0; i < 500000; i++);  /* 延时 */
-  }
-  #endif
-  /* ===== 最小测试模式结束 ===== */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -141,7 +124,7 @@ int main(void)
   Control_Init();       /* 初始化控制逻辑 */
 
   /* === 第二步: 启动定时器 (模块完整初始化后) === */
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);   /* 启动舵机PWM输出 */
+  /* 注: HAL_TIM_PWM_Start(&htim2) 已在 Servo_Init() 内部调用, 此处无需重复 */
   HAL_TIM_Base_Start_IT(&htim3);              /* 启动步进电机1ms定时中断 */
   HAL_TIM_Base_Start_IT(&htim4);              /* 启动500ms任务调度中断 */
 

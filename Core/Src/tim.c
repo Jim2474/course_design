@@ -43,7 +43,9 @@ void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 71;
+  /* PSC: 实体板 HSE 72MHz 用 71, 仿真 HSI 64MHz 用 63 */
+  /* 64MHz / (63+1) = 1MHz -> 1计数=1us, ARR=19999 -> 周期=20ms -> 50Hz */
+  htim2.Init.Prescaler = 63;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 19999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -87,7 +89,9 @@ void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 71;
+  /* PSC: 实体板 HSE 72MHz 用 71, 仿真 HSI 64MHz 用 63 */
+  /* 64MHz / (63+1) = 1MHz -> ARR=999 -> 周期=1ms -> 步进电机节拍 */
+  htim3.Init.Prescaler = 63;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -127,7 +131,9 @@ void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 7199;
+  /* PSC: 实体板 HSE 72MHz 用 7199, 仿真 HSI 64MHz 用 6399 */
+  /* 64MHz / (6399+1) = 10000Hz -> ARR=4999 -> 周期=500ms -> 任务调度 */
+  htim4.Init.Prescaler = 6399;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 4999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

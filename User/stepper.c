@@ -51,10 +51,15 @@ void Stepper_Init(void)
 
 /**
  * @brief  开始开帘 (正转 STEPPER_STEPS_FULL 步)
+ * @note   Bug7修复: 原代码只检查CURTAIN_STATE_OPEN终态,
+ *         MOVING状态下被重复调用时会重置s_target_steps,
+ *         导致电机永远走不到终点。
+ *         修复: 添加对运动方向的检查, 已在正转则直接return。
  */
 void Stepper_Open(void)
 {
     if (s_curtain_state == CURTAIN_STATE_OPEN) return;  /* 已经是开的, 不动作 */
+    if (s_direction == +1) return;                      /* 已在正转开帘中, 不重置步数 */
     s_direction    = +1;
     s_target_steps = STEPPER_STEPS_FULL;
     s_curtain_state = CURTAIN_STATE_MOVING;
@@ -62,10 +67,13 @@ void Stepper_Open(void)
 
 /**
  * @brief  开始关帘 (反转 STEPPER_STEPS_FULL 步)
+ * @note   Bug7修复: 同 Stepper_Open, 添加对反转方向的检查,
+ *         已在反转关帘中则直接return, 不重置s_target_steps。
  */
 void Stepper_Close(void)
 {
     if (s_curtain_state == CURTAIN_STATE_CLOSED) return;  /* 已经是关的, 不动作 */
+    if (s_direction == -1) return;                        /* 已在反转关帘中, 不重置步数 */
     s_direction    = -1;
     s_target_steps = STEPPER_STEPS_FULL;
     s_curtain_state = CURTAIN_STATE_MOVING;
