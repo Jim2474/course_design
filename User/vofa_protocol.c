@@ -13,8 +13,30 @@
 #include "usart.h"
 #include <string.h>  /* memcpy */
 
-/* FireWater帧尾标识 (IEEE 754 +Inf = 0x7F800000, 小端序) */
+/* FireWater帧尾标识 (IEEE 754 +Inf 小端序) */
 static const uint8_t VOFA_TAIL[4] = {0x00, 0x00, 0x80, 0x7F};
+
+/**
+ * @brief  直接寄存器发送UART数据 (完全绕过HAL状态机)
+ * @note   根因说明:
+ *         HAL_UART_Receive_DMA() 启动后, HAL 内部状态可能导致
+ *         HAL_UART_Transmit() 检查 gState 时返回 HAL_BUSY 而静默丢弃数据。
+ *         直接操作 USART1->SR / USART1->DR 寄存器无状态检查,
+ *         在任何 HAL 状态下均可安全发送, 是混用 DMA-RX + 阻塞-TX 的标准做法。
+ * @param  buf  数据指针
+ * @param  len  字节数
+ */
+static void uart1_write_direct(const uint8_t *buf, uint16_t len)
+{
+    for (uint16_t i = 0; i < len; i++)
+    {
+        /* 等待发送数据寄存器为空 (TXE: Transmit Data Register Empty) */
+        while (!(USART1->SR & USART_SR_TXE)) {}
+        USART1->DR = buf[i];
+    }
+    /* 等待最后一字节移出移位寄存器 (TC: Transmission Complete) */
+    while (!(USART1->SR & USART_SR_TC)) {}
+}
 
 /**
  * @brief  上传一帧数据到VOFA+
@@ -23,12 +45,6 @@ static const uint8_t VOFA_TAIL[4] = {0x00, 0x00, 0x80, 0x7F};
  * @param  curtain  窗帘状态 (0.0=开, 1.0=关, 2.0=运动中)
  * @param  window   窗户状态 (0.0=开, 1.0=关)
  * @param  mode     工作模式 (0.0=自动, 1.0=手动)
- * @note   Bug8修复: 原代码分两次HAL_UART_Transmit发送数据体和帧尾。
- *         若第一次Transmit正在进行时UART仍BUSY, 第二次发帧尾会
- *         返回HAL_BUSY被丢弃, 导致VOFA+收到无帧尾的截断帧,
- *         无法定界, 显示0.1这样的异常小数值。
- *         修复: 将data(20字节)+TAIL(4字节)拼为24字节连续buffer,
- *         单次Transmit原子发送整帧, 彻底消除帧分割风险。
  */
 void VOFA_Upload(float lux, float rain, float curtain, float window, float mode)
 {
@@ -41,9 +57,9 @@ void VOFA_Upload(float lux, float rain, float curtain, float window, float mode)
     data[3] = window;
     data[4] = mode;
 
-    memcpy(frame,               data,      sizeof(data));
+    memcpy(frame,                data,      sizeof(data));
     memcpy(frame + sizeof(data), VOFA_TAIL, sizeof(VOFA_TAIL));
 
-    /* 单次原子发送, 避免帧分割 */
-    HAL_UART_Transmit(&huart1, frame, sizeof(frame), 100);
+    /* 直接寄存器发送, 不受HAL状态机限制 */
+    uart1_write_direct(frame, sizeof(frame));
 }
